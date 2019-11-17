@@ -1,0 +1,18 @@
+#!/bin/sh -Cue
+#.help
+# %
+#
+# Check current and parent directories for a .hg; warn if found before reaching HOME.
+
+fatal() { rc="$1"; shift; printf %s\\n "${0##*/} error: $*" >&2 || true; exit "$rc"; }
+
+while [ $# -gt 0 ]; do case "$1" in --) shift; break ;; -) break ;; -*) fatal 64 'unexpected option' ;; *) break ;; esac; done
+
+[ $# = 0 ] || fatal 64 'unexpected arguments'
+
+while :; do
+    if [ . -ef "$HOME" ]; then break; fi
+    [ ! -e .hg ] || fatal 65 "found earlier .hg in $PWD"
+    cd ..
+    if [ . -ef .. ]; then break; fi
+    done

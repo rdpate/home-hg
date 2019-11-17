@@ -1,0 +1,32 @@
+#!/bin/sh -Cue
+#.help
+# %
+#
+# Decrement use-count.  Remove ~/.hg symlink at zero.
+#
+# Opposite of hhg-activate.
+
+fatal() { rc="$1"; shift; printf %s\\n "${0##*/} error: $*" >&2 || true; exit "$rc"; }
+nonfatal() { printf %s\\n "${0##*/}: $*" >&2 || true; }
+
+while [ $# -gt 0 ]; do case "$1" in --) shift; break ;; -) break ;; -*) fatal 64 'unexpected option' ;; *) break ;; esac; done
+
+if [ ! -L ~/.hg -a -e ~/.hg ]; then
+    fatal 65 "~/.hg exists and is not a symlink"
+    fi
+[ -e ~/.home-hg ] || fatal 65 'missing ~/.home-hg'
+[ $# = 0 ] || fatal 64 'unexpected arguments'
+
+lock=$HOME/.home-hg/home-hg-lock
+[ -e "$lock" ] || touch "$lock"
+exec <"$lock"
+flock 0 || fatal 70 "unable to flock $lock"
+read -r n || n=0
+case "$n" in
+    0) ;;
+    1)
+        rm ~/.hg
+        printf 0\\n >|"$lock"
+        ;;
+    *) printf %s\\n "$((n - 1))" >|"$lock" ;;
+    esac
